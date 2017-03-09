@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Cloudformation resource config rule
+
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+
+  LoggingPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+      - Ref: LambdaRole
+      PolicyName: LambdaLoggingPolicy
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource: arn:aws:logs:*:*:*
+
+  ReadResourcesPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+      - Ref: LambdaRole
+      PolicyName: ReadResourcesPolicy
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Action:
+          - cloudformation:Describe*
+          - cloudformation:List*
+          - ec2:Describe*
+          - ec2:List*
+          - iam:Describe*
+          - iam:List*
+          - autoscaling:Describe*
+          Resource: "*"
+
+  PutEvaluationsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+      - Ref: LambdaRole
+      PolicyName: PutEvaluationsPolicy
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Action:
+          - config:PutEvaluations
+          Resource: "*"
+
+  ConfigPermissionToCallLambda:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !GetAtt Lambda.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "config.amazonaws.com"
+
+  Lambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: CFN resource config rule
+      FunctionName: ConfigRuleCfnResources
+      Code:
+        S3Bucket: composer-dist
+        S3Key: cfn-config-rule/cfn-config-rule.zip
+      Runtime: java8
+      MemorySize: 512
+      Handler: configrule.cfn.CfnChecker::run
+      Role:
+        Fn::GetAtt:
+        - LambdaRole
+        - Arn
+      Timeout: 120
