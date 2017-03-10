@@ -14,20 +14,15 @@ import configrule.cfn.extractors._
 import scala.collection.JavaConverters._
 
 object CfnChecker {
-  val usefulStackStates = List(
-    StackStatus.CREATE_COMPLETE,
-    StackStatus.UPDATE_COMPLETE,
-    StackStatus.UPDATE_COMPLETE_CLEANUP_IN_PROGRESS,
-    StackStatus.UPDATE_IN_PROGRESS,
-    StackStatus.UPDATE_ROLLBACK_COMPLETE,
-    StackStatus.UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS,
-    StackStatus.UPDATE_ROLLBACK_FAILED,
-    StackStatus.UPDATE_ROLLBACK_IN_PROGRESS,
-    StackStatus.DELETE_FAILED,
-    StackStatus.ROLLBACK_COMPLETE,
-    StackStatus.ROLLBACK_FAILED,
-    StackStatus.ROLLBACK_IN_PROGRESS
+  // list of CFN stack states that we should ignore (deleted or create_failed)
+  val ignoreStackStates = List(
+    StackStatus.CREATE_FAILED,
+    StackStatus.CREATE_IN_PROGRESS,
+    StackStatus.DELETE_COMPLETE,
+    StackStatus.DELETE_IN_PROGRESS
   )
+  // we need a positive list of state to include
+  val usefulStackStates = StackStatus.values().toList.filterNot(ignoreStackStates.contains)
 
   def main(args: Array[String]): Unit = {
     val checker = new CfnChecker(new ProfileCredentialsProvider("composer-iam"), testMode = true)
@@ -39,6 +34,7 @@ case class Resource(stack: String, name: String, awsType: String)
 
 class CfnChecker(creds: AWSCredentialsProvider, testMode: Boolean) extends Logging {
 
+  // no-arg constructor for AWS Lambda
   def this() {
     this(new DefaultAWSCredentialsProviderChain(), testMode = false)
   }
@@ -48,33 +44,20 @@ class CfnChecker(creds: AWSCredentialsProvider, testMode: Boolean) extends Loggi
   implicit val configClient = AWSClientFactory.createConfigClient
   implicit val cfnClient = AWSClientFactory.createCfnClient
 
+  val extractors = List(
+    new IamExtractor(AWSClientFactory.createIamClient),
+    new DynamoExtractor(AWSClientFactory.createDynamoClient),
+    new Ec2Extractor(AWSClientFactory.createEc2Client),
+    new ElbExtractor(AWSClientFactory.createElbClient),
+    new AutoScalingExtractor(AWSClientFactory.createAsgClient)
+  )
 
-  val extractors = {
-    val asgClient = AWSClientFactory.createAsgClient
-    val ec2Client = AWSClientFactory.createEc2Client
-    val elbClient = AWSClientFactory.createElbClient
-    val iamClient = AWSClientFactory.createIamClient
-    val dynamoClient = AWSClientFactory.createDynamoClient
-    List(
-      new IamExtractor(iamClient),
-      new DynamoExtractor(dynamoClient),
-      new Ec2Extractor(ec2Client),
-      new ElbExtractor(elbClient),
-      new AutoScalingExtractor(asgClient)
-    )
-  }
-
+  // AWS Lambda handler entrypoint
   def run(event: ConfigEvent, context: Context): Unit = {
     doEvaluations(event, extractors)
   }
 
-  trait ResourceType[T, C] {
-    def awsType: String
-    def name(t: T): String
-    def fetchAll(client: C): List[T]
-  }
-
-  def doEvaluations(configEvent: ConfigEvent, extractors: List[ResourceServiceExtractor[_]]) = {
+  def doEvaluations(configEvent: ConfigEvent, extractors: List[ResourceServiceExtractor]) = {
     log.info("Retrieving CFN stacks")
     val allResources = getStacks(cfnClient).filterNot(_.getStackStatus.startsWith("DELETE_")).flatMap{ summary =>
       getStackResources(cfnClient, summary)

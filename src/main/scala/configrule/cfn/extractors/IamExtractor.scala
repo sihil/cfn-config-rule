@@ -5,31 +5,31 @@ import com.amazonaws.services.identitymanagement.model._
 
 import scala.collection.JavaConverters._
 
-class IamExtractor(val client: AmazonIdentityManagement) extends ResourceServiceExtractor[AmazonIdentityManagement] {
+class IamExtractor(client: AmazonIdentityManagement) extends ResourceServiceExtractor {
   override def resourceTypes = List(iamInstanceProfileResourceType, iamPolicyResourceType, iamRoleResourceType, iamUserResourceType)
 
-  val iamPolicyResourceType = new ResourceType[Policy, AmazonIdentityManagement] {
+  val iamPolicyResourceType = new ResourceType[Policy] {
     override def awsType = "AWS::IAM::Policy"
     override def name(t: Policy) = t.getPolicyName
-    override def fetchAll(client: AmazonIdentityManagement) = getIamPolicies(client)
+    override def fetchAll = getIamPolicies(client)
   }
 
-  val iamRoleResourceType = new ResourceType[Role, AmazonIdentityManagement] {
+  val iamRoleResourceType = new ResourceType[Role] {
     override def awsType = "AWS::IAM::Role"
     override def name(r: Role) = r.getRoleName
-    override def fetchAll(client: AmazonIdentityManagement) = getIamRoles(client)
+    override def fetchAll = getIamRoles(client)
   }
 
-  val iamUserResourceType = new ResourceType[User, AmazonIdentityManagement] {
+  val iamUserResourceType = new ResourceType[User] {
     override def awsType = "AWS::IAM::User"
     override def name(u: User) = u.getUserName
-    override def fetchAll(client: AmazonIdentityManagement) = getIamUsers(client)
+    override def fetchAll = getIamUsers(client)
   }
 
-  val iamInstanceProfileResourceType = new ResourceType[InstanceProfile, AmazonIdentityManagement] {
+  val iamInstanceProfileResourceType = new ResourceType[InstanceProfile] {
     override def awsType = "AWS::IAM::InstanceProfile"
     override def name(ip: InstanceProfile) = ip.getInstanceProfileName
-    override def fetchAll(client: AmazonIdentityManagement) = getIamInstanceProfiles(client)
+    override def fetchAll = getIamInstanceProfiles(client)
   }
 
   def getIamPolicies(iamClient: AmazonIdentityManagement) = resourceList { token =>

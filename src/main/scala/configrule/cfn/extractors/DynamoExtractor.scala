@@ -4,13 +4,13 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB
 import com.amazonaws.services.dynamodbv2.model.ListTablesRequest
 import scala.collection.JavaConverters._
 
-class DynamoExtractor(val client: AmazonDynamoDB) extends ResourceServiceExtractor[AmazonDynamoDB] {
+class DynamoExtractor(client: AmazonDynamoDB) extends ResourceServiceExtractor {
   override def resourceTypes = List(dynamoDbTableResourceType)
 
-  val dynamoDbTableResourceType = new ResourceType[String, AmazonDynamoDB] {
+  val dynamoDbTableResourceType = new ResourceType[String] {
     override def awsType = "AWS::DynamoDB::Table"
     override def name(name: String) = name
-    override def fetchAll(client: AmazonDynamoDB) = getDynamoTables(client)
+    override def fetchAll = getDynamoTables(client)
   }
 
   def getDynamoTables(dynamoClient: AmazonDynamoDB): List[String] = resourceList { startTableName =>

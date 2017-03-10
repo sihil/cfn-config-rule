@@ -4,18 +4,18 @@ import com.amazonaws.services.autoscaling.AmazonAutoScaling
 import com.amazonaws.services.autoscaling.model.{AutoScalingGroup, DescribeAutoScalingGroupsRequest, DescribeLaunchConfigurationsRequest, LaunchConfiguration}
 import scala.collection.JavaConverters._
 
-class AutoScalingExtractor(val client: AmazonAutoScaling) extends ResourceServiceExtractor[AmazonAutoScaling] {
+class AutoScalingExtractor(client: AmazonAutoScaling) extends ResourceServiceExtractor {
   override def resourceTypes = List(autoScalingGroupResourceType, autoScalingLaunchConfigResourceType)
-  val autoScalingGroupResourceType = new ResourceType[AutoScalingGroup, AmazonAutoScaling] {
+  val autoScalingGroupResourceType = new ResourceType[AutoScalingGroup] {
     override def awsType = "AWS::AutoScaling::AutoScalingGroup"
     override def name(t: AutoScalingGroup) = t.getAutoScalingGroupName
-    override def fetchAll(client: AmazonAutoScaling) = getAutoScalingGroups(client)
+    override def fetchAll = getAutoScalingGroups(client)
   }
 
-  val autoScalingLaunchConfigResourceType = new ResourceType[LaunchConfiguration, AmazonAutoScaling] {
+  val autoScalingLaunchConfigResourceType = new ResourceType[LaunchConfiguration] {
     override def awsType = "AWS::AutoScaling::LaunchConfiguration"
     override def name(lc: LaunchConfiguration) = lc.getLaunchConfigurationName
-    override def fetchAll(client: AmazonAutoScaling) = getAutoScalingLaunchConfiguration(client)
+    override def fetchAll = getAutoScalingLaunchConfiguration(client)
   }
 
   def getAutoScalingGroups(asgClient: AmazonAutoScaling) = resourceList { token =>

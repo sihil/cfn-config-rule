@@ -6,15 +6,14 @@ import java.util.Date
 import com.amazonaws.services.config.model.{ComplianceType, Evaluation}
 import configrule.cfn.{Logging, Resource}
 
-trait ResourceServiceExtractor[C] extends Logging {
-  def client: C
+trait ResourceServiceExtractor extends Logging {
   def evaluate(cfnResources: List[Resource], dateTime: ZonedDateTime): List[Evaluation] = {
     resourceTypes.flatMap { resourceType =>
-      evaluate(resourceType, cfnResources, dateTime, client)
+      evaluate(resourceType, cfnResources, dateTime)
     }
   }
-  def evaluate[T](resourceType: ResourceType[T, C], stackResources: List[Resource], date: ZonedDateTime, client: C): List[Evaluation] = {
-    val resources = resourceType.fetchAll(client)
+  def evaluate[T](resourceType: ResourceType[T], stackResources: List[Resource], date: ZonedDateTime): List[Evaluation] = {
+    val resources = resourceType.fetchAll
     log.info(s"Examining ${resources.length} ${resourceType.awsType}")
     val oldSchoolDate = Date.from(date.toInstant)
     val cfnResourceNames = stackResources.filter(_.awsType == resourceType.awsType).map(_.name).toSet
@@ -37,6 +36,6 @@ trait ResourceServiceExtractor[C] extends Logging {
     }
     evaluations
   }
-  def resourceTypes: List[ResourceType[_, C]]
+  def resourceTypes: List[ResourceType[_]]
 }
 

@@ -1,7 +1,7 @@
 package configrule.cfn.extractors
 
-trait ResourceType[T, C] {
+trait ResourceType[T] {
   def awsType: String
   def name(t: T): String
-  def fetchAll(client: C): List[T]
+  def fetchAll: List[T]
 }
