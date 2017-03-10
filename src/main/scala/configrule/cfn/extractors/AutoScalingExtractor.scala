@@ -9,7 +9,7 @@ class AutoScalingExtractor(client: AmazonAutoScaling) extends ResourceServiceExt
   val autoScalingGroupResourceType = new ResourceType[AutoScalingGroup] {
     override def awsType = "AWS::AutoScaling::AutoScalingGroup"
     override def name(t: AutoScalingGroup) = t.getAutoScalingGroupName
-    override def fetchAll = getAutoScalingGroups(client)
+    override lazy val fetchAll = getAutoScalingGroups(client)
   }
 
   val autoScalingLaunchConfigResourceType = new ResourceType[LaunchConfiguration] {

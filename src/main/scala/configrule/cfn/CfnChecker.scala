@@ -44,12 +44,13 @@ class CfnChecker(creds: AWSCredentialsProvider, testMode: Boolean) extends Loggi
   implicit val configClient = AWSClientFactory.createConfigClient
   implicit val cfnClient = AWSClientFactory.createCfnClient
 
+  private val autoScalingExtractor = new AutoScalingExtractor(AWSClientFactory.createAsgClient)
   val extractors = List(
     new IamExtractor(AWSClientFactory.createIamClient),
     new DynamoExtractor(AWSClientFactory.createDynamoClient),
-    new Ec2Extractor(AWSClientFactory.createEc2Client),
+    new Ec2Extractor(AWSClientFactory.createEc2Client, autoScalingExtractor),
     new ElbExtractor(AWSClientFactory.createElbClient),
-    new AutoScalingExtractor(AWSClientFactory.createAsgClient)
+    autoScalingExtractor
   )
 
   // AWS Lambda handler entrypoint

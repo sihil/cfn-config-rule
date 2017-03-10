@@ -19,7 +19,9 @@ trait ResourceServiceExtractor extends Logging {
     val cfnResourceNames = stackResources.filter(_.awsType == resourceType.awsType).map(_.name).toSet
     log.debug(s"All resource names: $cfnResourceNames")
     val evaluations = resources.map{ r =>
-      val complianceType = if (cfnResourceNames.contains(resourceType.name(r))) {
+      val complianceType = if (resourceType.isNotApplicable(r)) {
+        ComplianceType.NOT_APPLICABLE
+      } else if (cfnResourceNames.contains(resourceType.name(r))) {
         ComplianceType.COMPLIANT
       } else {
         log.debug(s"${resourceType.name(r)} not compliant")
