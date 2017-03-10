@@ -47,6 +47,8 @@ Resources:
           - iam:Describe*
           - iam:List*
           - autoscaling:Describe*
+          - dynamodb:List*
+          - elasticloadbalancing:Describe*
           Resource: "*"
 
   PutEvaluationsPolicy:
